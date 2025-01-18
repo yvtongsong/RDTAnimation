@@ -2,21 +2,87 @@ import javax.swing.*;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Dimension;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class Channel extends JPanel {
-	private final List<Message> messages;
+
+	public class Message {
+		private final Direction direction;
+		private Color color = Color.red;
+		private State state = State.NORMAL;
+		private int y;
+
+		public Message(Direction d) {
+			direction = d;
+			switch(direction) {
+				case UP:
+					y = Utils.DRAW_PANEL_HEIGHT - Utils.STATIC_RECTANGLE_HEIGHT;
+					break;
+				case DOWN:
+					y = 0;
+					break;
+			}
+		}
+
+		public void move() {
+			switch(direction) {
+				case UP:
+					y--;
+					break;
+				case DOWN:
+					y++;
+					break;
+			}
+		}
+
+		public int getY() {
+			return y;
+		}
+
+		public State getState() {
+			return state;
+		}
+
+		public Direction getDirection() {
+			return direction;
+		}
+
+		public Color getColor() {
+			return color;
+		}
+
+		public void corrupt() {
+			color = Color.black;
+			state = State.CORRUPT;
+		}
+
+		public void lose() {
+			color = Color.white;
+			state = State.LOSE;
+		}
+
+		public boolean done() {
+			return !(y >= 0 && y <= Utils.DRAW_PANEL_HEIGHT - Utils.STATIC_RECTANGLE_HEIGHT);
+		}
+	}
+
+	private final CopyOnWriteArraySet<Message> allMessages;
+	private final CopyOnWriteArraySet<Message> highlightedMessages;
+	private Message messageChoosen = null;
 
 	public Channel() {
 		setPreferredSize(new Dimension(Utils.DRAW_PANEL_WIDTH, Utils.DRAW_PANEL_HEIGHT));
-		messages = new ArrayList<>();
+		allMessages = new CopyOnWriteArraySet<>();
+		highlightedMessages = new CopyOnWriteArraySet<>();
+
+		setUpFSM();
 	}
 
-	public Message addMessage(Direction d) {
+	public void addMessage(Direction d) {
 		Message message = new Message(d);
-		messages.add(message);
+		allMessages.add(message);
+		highlightedMessages.add(message);
 
 		new Thread(() -> {
 			while(!message.done()) {
@@ -28,27 +94,29 @@ public class Channel extends JPanel {
 					e.printStackTrace();
 				}
 			}
-			messages.remove(message);
+			highlightedMessages.remove(message);
 			repaint();
 		}).start();
-
-		return message;
 	}
 
-	public Message chooseMessage(int clickY) {
-		for (Message message : messages) {
-			if (
-					clickY > message.getY() && 
-					clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT &&
-					message.getState() != State.LOSE) {
-				return message;
+	public void chooseMessage(int clickY) {
+		for (Message message : highlightedMessages) {
+			if (clickY > message.getY() && clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT){
+				messageChoosen = message;
+				return;
 			}
 		}
-		return null;
 	}
 
-	public void loseMessage(Message messageChoosen) {
-		messages.remove(messageChoosen);
+	public void loseMessage() {
+		highlightedMessages.remove(messageChoosen);
+		messageChoosen = null;
+	}
+
+	public void corruptMessage() {
+		if (messageChoosen != null) {
+			messageChoosen.corrupt();
+		}
 	}
 
 	@Override
@@ -61,7 +129,6 @@ public class Channel extends JPanel {
 				Utils.DRAW_PANEL_HEIGHT);
 
 		drawStaticRectangle(g);
-
 		drawMovingRectangle(g);
 	}
 
@@ -80,7 +147,7 @@ public class Channel extends JPanel {
 	}
 
 	private void drawMovingRectangle(Graphics g) {
-		for (Message message : messages) {
+		for (Message message : highlightedMessages) {
 			g.setColor(message.getColor());
 			g.fillRect(
 					Utils.DRAW_PANEL_WIDTH / 2 - Utils.STATIC_RECTANGLE_WIDTH / 2,
@@ -88,5 +155,28 @@ public class Channel extends JPanel {
 					Utils.STATIC_RECTANGLE_WIDTH,
 					Utils.STATIC_RECTANGLE_HEIGHT);
 		}
+	}
+
+	private void setUpFSM() {
+		new Thread(() -> {
+			while (true) {
+				for (Message message : allMessages) {
+					if (message.done()) {
+						System.out.println("?");
+						if (message.getState() == State.CORRUPT) {
+							switch (message.getDirection()) {
+								case UP:
+									addMessage(Direction.DOWN);
+									break;
+								case DOWN:
+									addMessage(Direction.UP);
+									break;
+							}
+						}
+						allMessages.remove(message);
+					}
+				}
+			}
+		}).start();
 	}
 }

@@ -5,8 +5,12 @@ import java.util.concurrent.TimeUnit;
 
 public class Simulation {
 	public Channel channel;
-	public Message messageChoosen;
+
 	public void go() {
+		setUpGUI();
+	}
+
+	public void setUpGUI() {
 		JFrame frame = new JFrame();
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -19,11 +23,8 @@ public class Simulation {
 		channel = new Channel();
 		frame.add(BorderLayout.CENTER, channel);
 
-		JButton upButton = new JButton("UP");
-		controlPanel.add(upButton);
-
-		JButton downButton = new JButton("DOWN");
-		controlPanel.add(downButton);
+		JButton sendButton = new JButton("Send");
+		controlPanel.add(sendButton);
 
 		JButton corruptButton = new JButton("Corrupt");
 		controlPanel.add(corruptButton);
@@ -33,19 +34,9 @@ public class Simulation {
 
 		frame.pack();
 
-		upButton.addActionListener((event) -> channel.addMessage(Direction.UP));
-		downButton.addActionListener((event) -> channel.addMessage(Direction.DOWN));
-		corruptButton.addActionListener((event) -> {
-			if (messageChoosen != null) {
-				messageChoosen.corrupt();
-			}
-		});
-		loseButton.addActionListener((event) -> {
-			if (messageChoosen != null) {
-				channel.loseMessage(messageChoosen);
-				messageChoosen = null;
-			}
-		});
+		sendButton.addActionListener((event) -> channel.addMessage(Direction.UP));
+		corruptButton.addActionListener((event) -> channel.corruptMessage());
+		loseButton.addActionListener((event) -> channel.loseMessage());
 
 		channel.addMouseListener(new ChannelMouseListener());
 	}
@@ -53,7 +44,7 @@ public class Simulation {
 	public class ChannelMouseListener implements MouseListener {
 		@Override
 		public void mouseClicked(MouseEvent e) {
-			messageChoosen = channel.chooseMessage(e.getY());
+			channel.chooseMessage(e.getY());
 		}
 
 		@Override
