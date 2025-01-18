@@ -1,10 +1,14 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.concurrent.TimeUnit;
 
 public class Simulation {
+	public Channel channel;
+	public Message messageChoosen;
 	public void go() {
 		JFrame frame = new JFrame();
+		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setResizable(false);
 		frame.setVisible(true);
@@ -12,7 +16,7 @@ public class Simulation {
 		JPanel controlPanel = new JPanel();
 		frame.add(BorderLayout.EAST, controlPanel);
 
-		Channel channel = new Channel();
+		channel = new Channel();
 		frame.add(BorderLayout.CENTER, channel);
 
 		JButton upButton = new JButton("UP");
@@ -25,5 +29,29 @@ public class Simulation {
 
 		upButton.addActionListener((event) -> channel.addMessage(Direction.UP));
 		downButton.addActionListener((event) -> channel.addMessage(Direction.DOWN));
+
+		channel.addMouseListener(new ChannelMouseListener());
+	}
+
+	public class ChannelMouseListener implements MouseListener {
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			messageChoosen = channel.chooseMessage(e.getY());
+			if (messageChoosen != null) {
+				messageChoosen.corrupt();
+			}
+		}
+
+		@Override
+		public void mouseEntered(MouseEvent e) {}
+
+		@Override
+		public void mouseExited(MouseEvent e) {}
+
+		@Override
+		public void mousePressed(MouseEvent e) {}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {}
 	}
 }

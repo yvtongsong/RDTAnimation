@@ -7,64 +7,19 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class Channel extends JPanel {
-	public class Message {
-		private Direction direction;
-		private Color color = Color.red;
-		private int y;
-
-		public Message(Direction d) {
-			direction = d;
-			switch(direction) {
-				case UP:
-					y = Utils.DRAW_PANEL_HEIGHT - Utils.STATIC_RECTANGLE_HEIGHT;
-					break;
-				case DOWN:
-					y = 0;
-					break;
-			}
-		}
-
-		public void move() {
-			switch(direction) {
-				case UP:
-					y--;
-					break;
-				case DOWN:
-					y++;
-					break;
-			}
-		}
-
-		public int getY() {
-			return y;
-		}
-
-		public void corrupt() {
-			color = Color.black;
-		}
-
-		public void lose() {
-			color = Color.white;
-		}
-
-		public boolean isValid() {
-			return (y >= 0 && y <= Utils.DRAW_PANEL_HEIGHT - Utils.STATIC_RECTANGLE_HEIGHT);
-		}
-	}
-
-	private List<Message> messages;
+	private final List<Message> messages;
 
 	public Channel() {
 		setPreferredSize(new Dimension(Utils.DRAW_PANEL_WIDTH, Utils.DRAW_PANEL_HEIGHT));
 		messages = new ArrayList<>();
 	}
 
-	public void addMessage(Direction d) {
+	public Message addMessage(Direction d) {
 		Message message = new Message(d);
 		messages.add(message);
 
 		new Thread(() -> {
-			while(message.isValid()) {
+			while(!message.done()) {
 				message.move();
 				repaint();
 				try {
@@ -76,6 +31,17 @@ public class Channel extends JPanel {
 			messages.remove(message);
 			repaint();
 		}).start();
+
+		return message;
+	}
+
+	public Message chooseMessage(int clickY) {
+		for (Message message : messages) {
+			if (clickY > message.getY() && clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT) {
+				return message;
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -108,7 +74,7 @@ public class Channel extends JPanel {
 
 	private void drawMovingRectangle(Graphics g) {
 		for (Message message : messages) {
-			g.setColor(message.color);
+			g.setColor(message.getColor());
 			g.fillRect(
 					Utils.DRAW_PANEL_WIDTH / 2 - Utils.STATIC_RECTANGLE_WIDTH / 2,
 					message.getY(),
