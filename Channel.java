@@ -37,11 +37,18 @@ public class Channel extends JPanel {
 
 	public Message chooseMessage(int clickY) {
 		for (Message message : messages) {
-			if (clickY > message.getY() && clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT) {
+			if (
+					clickY > message.getY() && 
+					clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT &&
+					message.getState() != State.LOSE) {
 				return message;
 			}
 		}
 		return null;
+	}
+
+	public void loseMessage(Message messageChoosen) {
+		messages.remove(messageChoosen);
 	}
 
 	@Override

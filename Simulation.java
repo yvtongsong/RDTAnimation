@@ -25,10 +25,27 @@ public class Simulation {
 		JButton downButton = new JButton("DOWN");
 		controlPanel.add(downButton);
 
+		JButton corruptButton = new JButton("Corrupt");
+		controlPanel.add(corruptButton);
+
+		JButton loseButton = new JButton("Lose");
+		controlPanel.add(loseButton);
+
 		frame.pack();
 
 		upButton.addActionListener((event) -> channel.addMessage(Direction.UP));
 		downButton.addActionListener((event) -> channel.addMessage(Direction.DOWN));
+		corruptButton.addActionListener((event) -> {
+			if (messageChoosen != null) {
+				messageChoosen.corrupt();
+			}
+		});
+		loseButton.addActionListener((event) -> {
+			if (messageChoosen != null) {
+				channel.loseMessage(messageChoosen);
+				messageChoosen = null;
+			}
+		});
 
 		channel.addMouseListener(new ChannelMouseListener());
 	}
@@ -37,9 +54,6 @@ public class Simulation {
 		@Override
 		public void mouseClicked(MouseEvent e) {
 			messageChoosen = channel.chooseMessage(e.getY());
-			if (messageChoosen != null) {
-				messageChoosen.corrupt();
-			}
 		}
 
 		@Override
