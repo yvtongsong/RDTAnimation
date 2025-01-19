@@ -5,8 +5,8 @@ public class Utils {
 	public static final int DRAW_PANEL_WIDTH = 20;
 	public static final int DRAW_PANEL_HEIGHT = 300;
 
-	public static final int CONTROL_PANEL_WIDTH = 400;
-	public static final int CONTROL_PANEL_HEIGHT = 500;
+	public static final int CONTROL_PANEL_WIDTH = 200;
+	public static final int CONTROL_PANEL_HEIGHT = 300;
 
 	public static final int FRAME_WIDTH = DRAW_PANEL_WIDTH + CONTROL_PANEL_WIDTH;
 	public static final int FRAME_HEIGHT = DRAW_PANEL_HEIGHT;

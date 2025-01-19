@@ -69,7 +69,7 @@ public class Channel extends JPanel {
 
 	private final CopyOnWriteArraySet<Message> allMessages;
 	private final CopyOnWriteArraySet<Message> highlightedMessages;
-	private Message messageChoosen = null;
+	private Message messageChosen = null;
 
 	public Channel() {
 		setPreferredSize(new Dimension(Utils.DRAW_PANEL_WIDTH, Utils.DRAW_PANEL_HEIGHT));
@@ -79,7 +79,15 @@ public class Channel extends JPanel {
 		setUpFSM();
 	}
 
-	public void addMessage(Direction d) {
+	public boolean go() {
+		if (allMessages.isEmpty()) {
+			addMessage(Direction.UP);
+			return true;
+		}
+		return false;
+	}
+
+	public Message addMessage(Direction d) {
 		Message message = new Message(d);
 		allMessages.add(message);
 		highlightedMessages.add(message);
@@ -89,7 +97,7 @@ public class Channel extends JPanel {
 				message.move();
 				repaint();
 				try {
-					TimeUnit.MILLISECONDS.sleep(50);
+					TimeUnit.MILLISECONDS.sleep(16);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -97,26 +105,37 @@ public class Channel extends JPanel {
 			highlightedMessages.remove(message);
 			repaint();
 		}).start();
+
+		return message;
 	}
 
-	public void chooseMessage(int clickY) {
+	public boolean chooseMessage(int clickY) {
 		for (Message message : highlightedMessages) {
 			if (clickY > message.getY() && clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT){
-				messageChoosen = message;
-				return;
+				messageChosen = message;
+				return true;
 			}
 		}
+		return false;
 	}
 
-	public void loseMessage() {
-		highlightedMessages.remove(messageChoosen);
-		messageChoosen = null;
-	}
-
-	public void corruptMessage() {
-		if (messageChoosen != null) {
-			messageChoosen.corrupt();
+	public boolean loseMessage() {
+		boolean result = false;
+		if (messageChosen != null && highlightedMessages.contains(messageChosen)) {
+			messageChosen.lose();
+			result = true;
 		}
+		highlightedMessages.remove(messageChosen);
+		messageChosen = null;
+		return result;
+	}
+
+	public boolean corruptMessage() {
+		if (messageChosen != null && highlightedMessages.contains(messageChosen)) {
+			messageChosen.corrupt();
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -162,14 +181,26 @@ public class Channel extends JPanel {
 			while (true) {
 				for (Message message : allMessages) {
 					if (message.done()) {
-						System.out.println("?");
-						if (message.getState() == State.CORRUPT) {
+						if (message.getState() == State.LOSE) {
+							try {
+								TimeUnit.SECONDS.sleep(5);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+							addMessage(Direction.UP);
+						} else {
+							Message tmp;
 							switch (message.getDirection()) {
 								case UP:
-									addMessage(Direction.DOWN);
+									tmp = addMessage(Direction.DOWN);
+									if (message.getState() == State.CORRUPT) {
+										tmp.corrupt();
+									}
 									break;
 								case DOWN:
-									addMessage(Direction.UP);
+									if (message.getState() == State.CORRUPT) {
+										addMessage(Direction.UP);
+									}
 									break;
 							}
 						}
