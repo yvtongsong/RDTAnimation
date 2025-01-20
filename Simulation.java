@@ -1,11 +1,17 @@
 import javax.swing.*;
-import java.awt.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.awt.BorderLayout;
 import java.awt.event.*;
 import java.util.concurrent.TimeUnit;
 
 public class Simulation {
-	public Channel channel;
-	public JTextArea text;
+	public final List<Channel> channels;
+	private int channelIndex = 0;
+
+	public Simulation() {
+		channels = new ArrayList<>();
+	}
 
 	public void go() {
 		setUpGUI();
@@ -13,87 +19,80 @@ public class Simulation {
 
 	public void setUpGUI() {
 		JFrame frame = new JFrame();
+		frame.setTitle("Reliable Data Transfer");
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setResizable(false);
 		frame.setVisible(true);
 
-		JPanel controlPanel = new JPanel();
+		JPanel channelPanel = new JPanel();
+		JPanel controlPanel = new JPanel(new BorderLayout());
+		JPanel buttonPanel = new JPanel();
+		JButton sendButton = new JButton("Send");
+		JButton corruptButton = new JButton("Corrupt");
+		JButton loseButton = new JButton("Lose");
+		JButton pauseButton = new JButton("Pause");
+		JButton resetButton = new JButton("Reset");
+		NotificationBoard notificationBoard = new NotificationBoard();
+
+		frame.add(BorderLayout.CENTER, channelPanel);
 		frame.add(BorderLayout.EAST, controlPanel);
 
-		channel = new Channel();
-		frame.add(BorderLayout.CENTER, channel);
+		for (int i = 0; i < Utils.NUMBER_OF_CHANNELS; i++) {
+			Channel channel = new Channel(notificationBoard);
+			channels.add(channel);
+			channelPanel.add(BorderLayout.CENTER, channel);
+		}
 
-		JButton sendButton = new JButton("Send");
-		controlPanel.add(sendButton);
-
-		JButton corruptButton = new JButton("Corrupt");
-		controlPanel.add(corruptButton);
-
-		JButton loseButton = new JButton("Lose");
-		controlPanel.add(loseButton);
-
-		text = new JTextArea(10, 30);
-		JScrollPane scroll = new JScrollPane(
-				text,
-				JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		controlPanel.add(scroll);
+		buttonPanel.add(sendButton);
+		buttonPanel.add(corruptButton);
+		buttonPanel.add(loseButton);
+		buttonPanel.add(pauseButton);
+		buttonPanel.add(resetButton);
+		controlPanel.add(BorderLayout.CENTER, notificationBoard);
+		controlPanel.add(BorderLayout.NORTH, buttonPanel);
 
 		frame.pack();
 
 		sendButton.addActionListener((event) -> {
-			if (channel.go()) {
-				appendNotifications("Send a Message!");
-			} else {
-				appendNotifications("Invalid operation! This channel is busy!");
+			if (channelIndex >= Utils.NUMBER_OF_CHANNELS) {
+				notificationBoard.append("Channels are busy");
+				return;
 			}
+			channels.get(channelIndex).go();
+			channelIndex++;
+			notificationBoard.append("Send a Message!");
 		});
 		corruptButton.addActionListener((event) -> {
-			if (channel.corruptMessage()) {
-				appendNotifications("Corrupt!");
-			} else {
-				appendNotifications("Invalid operation! Choose a new Message!");
+			if (Utils.channelChosen != null) {
+				Utils.channelChosen.corruptMessage();
 			}
 		});
 		loseButton.addActionListener((event) -> {
-			if (channel.loseMessage()) {
-				appendNotifications("Lose!");
-			} else {
-				appendNotifications("Invalid operation! Choose a new Message!");
+			if (Utils.channelChosen != null) {
+				Utils.channelChosen.loseMessage();
 			}
 		});
-
-		channel.addMouseListener(new ChannelMouseListener());
-	}
-
-	private int notificationTimes = 0;
-
-	private void appendNotifications(String s) {
-		notificationTimes++;
-		text.append(notificationTimes + ": " + s + "\n");
-	}
-
-	public class ChannelMouseListener implements MouseListener {
-		@Override
-		public void mouseClicked(MouseEvent e) {
-			if (channel.chooseMessage(e.getY())) {
-				appendNotifications("You have chosen a Message!");
+		pauseButton.addActionListener((event) -> {
+			if (pauseButton.getText().equals("Pause")) {
+				pauseButton.setText("Continue");
+				for (Channel channel : channels) {
+					channel.pause();
+				}
 			} else {
-				appendNotifications("Please click again!");
+				pauseButton.setText("Pause");
+				for (Channel channel : channels) {
+					channel.goOn();
+				}
 			}
-		}
-
-		@Override
-		public void mouseEntered(MouseEvent e) {}
-
-		@Override
-		public void mouseExited(MouseEvent e) {}
-
-		@Override
-		public void mousePressed(MouseEvent e) {}
-
-		@Override
-		public void mouseReleased(MouseEvent e) {}
+		});
+		resetButton.addActionListener((event) -> {
+			for (Channel channel : channels) {
+				channel.reset();
+			}
+			channelIndex = 0;
+			Utils.channelChosen = null;
+			notificationBoard.reset();
+		});
 	}
 }

@@ -2,8 +2,11 @@ import javax.swing.*;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Dimension;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseEvent;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Channel extends JPanel {
 
@@ -67,24 +70,47 @@ public class Channel extends JPanel {
 		}
 	}
 
+	public class ChannelMouseListener implements MouseListener {
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			chooseMessage(e.getY());
+		}
+
+		@Override
+		public void mouseEntered(MouseEvent e) {}
+
+		@Override
+		public void mouseExited(MouseEvent e) {}
+
+		@Override
+		public void mousePressed(MouseEvent e) {}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {}
+	}
+
+
 	private final CopyOnWriteArraySet<Message> allMessages;
 	private final CopyOnWriteArraySet<Message> highlightedMessages;
+	private final NotificationBoard notificationBoard;
 	private Message messageChosen = null;
+	private AtomicBoolean isPausing;
+	private final Object pausingLock = new Object();
+	private final Object fsmLock = new Object();
 
-	public Channel() {
+	public Channel(NotificationBoard notificationBoard) {
 		setPreferredSize(new Dimension(Utils.DRAW_PANEL_WIDTH, Utils.DRAW_PANEL_HEIGHT));
+		addMouseListener(new ChannelMouseListener());
+		this.notificationBoard = notificationBoard;
+		isPausing = new AtomicBoolean(false);
 		allMessages = new CopyOnWriteArraySet<>();
 		highlightedMessages = new CopyOnWriteArraySet<>();
 
 		setUpFSM();
 	}
 
-	public boolean go() {
-		if (allMessages.isEmpty()) {
-			addMessage(Direction.UP);
-			return true;
-		}
-		return false;
+	public void go() {
+		addMessage(Direction.UP);
 	}
 
 	public Message addMessage(Direction d) {
@@ -94,13 +120,26 @@ public class Channel extends JPanel {
 
 		new Thread(() -> {
 			while(!message.done()) {
-				message.move();
-				repaint();
-				try {
-					TimeUnit.MILLISECONDS.sleep(16);
-				} catch (Exception e) {
-					e.printStackTrace();
+				if (!isPausing.get()) {
+					message.move();
+					repaint();
+					try {
+						TimeUnit.MILLISECONDS.sleep(16);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					synchronized (pausingLock)  {
+						try {
+							pausingLock.wait();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
 				}
+			}
+			synchronized (fsmLock) {
+				fsmLock.notify();
 			}
 			highlightedMessages.remove(message);
 			repaint();
@@ -109,34 +148,62 @@ public class Channel extends JPanel {
 		return message;
 	}
 
-	public boolean chooseMessage(int clickY) {
+	public void chooseMessage(int clickY) {
 		for (Message message : highlightedMessages) {
 			if (clickY > message.getY() && clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT){
 				messageChosen = message;
-				return true;
+				Utils.channelChosen = this;
+				notificationBoard.append("You have chosen a Message");
+				return;
 			}
 		}
-		return false;
+		notificationBoard.append("Please click again!");
 	}
 
-	public boolean loseMessage() {
-		boolean result = false;
+	public void loseMessage() {
 		if (messageChosen != null && highlightedMessages.contains(messageChosen)) {
 			messageChosen.lose();
-			result = true;
+			repaint();
+			notificationBoard.append("Lose!");
+		} else {
+			notificationBoard.append("Invalid Operation! Please choose another message!");
 		}
 		highlightedMessages.remove(messageChosen);
 		messageChosen = null;
-		return result;
 	}
 
-	public boolean corruptMessage() {
-		if (messageChosen != null && highlightedMessages.contains(messageChosen)) {
+	public void corruptMessage() {
+		if (
+				messageChosen != null &&
+				highlightedMessages.contains(messageChosen) &&
+				messageChosen.getState() != State.CORRUPT) {
 			messageChosen.corrupt();
-			return true;
+			repaint();
+			notificationBoard.append("Corrupt!");
+		} else {
+			notificationBoard.append("Invalid Operation! Please choose another message!");
 		}
-		return false;
 	}
+
+	public void pause() {
+		isPausing.set(true);
+	}
+
+	public void goOn() {
+		synchronized (pausingLock) {
+			isPausing.set(false);
+			pausingLock.notify();
+		}
+	}
+
+	public void reset() {
+		allMessages.clear();
+		highlightedMessages.clear();
+		isPausing.set(false);
+		notificationBoard.reset();
+		goOn();
+	}
+
 
 	@Override
 	public void paintComponent(Graphics g) {
@@ -205,6 +272,14 @@ public class Channel extends JPanel {
 							}
 						}
 						allMessages.remove(message);
+					} else {
+						synchronized (fsmLock) {
+							try {
+								fsmLock.wait();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
 					}
 				}
 			}

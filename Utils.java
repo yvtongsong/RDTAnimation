@@ -13,4 +13,8 @@ public class Utils {
 
 	public static final int FRAME_X = 600;
 	public static final int FRAME_Y = 100;
+
+	public static final int NUMBER_OF_CHANNELS = 15;
+
+	public static Channel channelChosen;
 }
