@@ -97,11 +97,13 @@ public class Channel extends JPanel {
 	private AtomicBoolean isPausing;
 	private final Object pausingLock = new Object();
 	private final Object fsmLock = new Object();
+	private final int channelIndex;
 
-	public Channel(NotificationBoard notificationBoard) {
+	public Channel(int channelIndex, NotificationBoard notificationBoard) {
 		setPreferredSize(new Dimension(Utils.DRAW_PANEL_WIDTH, Utils.DRAW_PANEL_HEIGHT));
 		addMouseListener(new ChannelMouseListener());
 		this.notificationBoard = notificationBoard;
+		this.channelIndex = channelIndex;
 		isPausing = new AtomicBoolean(false);
 		allMessages = new CopyOnWriteArraySet<>();
 		highlightedMessages = new CopyOnWriteArraySet<>();
@@ -153,20 +155,20 @@ public class Channel extends JPanel {
 			if (clickY > message.getY() && clickY < message.getY() + Utils.STATIC_RECTANGLE_HEIGHT){
 				messageChosen = message;
 				Utils.channelChosen = this;
-				notificationBoard.append("You have chosen a Message");
+				notificationBoard.append(channelIndex, "You have chosen a Message");
 				return;
 			}
 		}
-		notificationBoard.append("Please click again!");
+		notificationBoard.append(channelIndex, "Please click again!");
 	}
 
 	public void loseMessage() {
 		if (messageChosen != null && highlightedMessages.contains(messageChosen)) {
 			messageChosen.lose();
 			repaint();
-			notificationBoard.append("Lose!");
+			notificationBoard.append(channelIndex, "Lose!");
 		} else {
-			notificationBoard.append("Invalid Operation! Please choose another message!");
+			notificationBoard.append(channelIndex, "Invalid Operation! Please choose another message!");
 		}
 		highlightedMessages.remove(messageChosen);
 		messageChosen = null;
@@ -179,9 +181,9 @@ public class Channel extends JPanel {
 				messageChosen.getState() != State.CORRUPT) {
 			messageChosen.corrupt();
 			repaint();
-			notificationBoard.append("Corrupt!");
+			notificationBoard.append(channelIndex, "Corrupt!");
 		} else {
-			notificationBoard.append("Invalid Operation! Please choose another message!");
+			notificationBoard.append(channelIndex, "Invalid Operation! Please choose another message!");
 		}
 	}
 
@@ -230,6 +232,11 @@ public class Channel extends JPanel {
 				0,
 				Utils.STATIC_RECTANGLE_WIDTH,
 				Utils.STATIC_RECTANGLE_HEIGHT);
+		g.drawString(
+				String.valueOf(channelIndex),
+				Utils.DRAW_PANEL_WIDTH / 2 - Utils.STATIC_RECTANGLE_WIDTH / 2,
+				Utils.DRAW_PANEL_HEIGHT - Utils.STATIC_RECTANGLE_HEIGHT / 2);
+
 	}
 
 	private void drawMovingRectangle(Graphics g) {

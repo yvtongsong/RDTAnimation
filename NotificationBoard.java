@@ -12,9 +12,8 @@ public class NotificationBoard extends JScrollPane{
 		textArea = (JTextArea) this.getViewport().getView();
 	}
 
-	public void append(String s) {
-		notificationIndex++;
-		textArea.append(notificationIndex + ": " + s + "\n");
+	public void append(int channelIndex, String s) {
+		textArea.append(channelIndex + ": " + s + "\n");
 	}
 
 	public void reset() {

@@ -39,7 +39,7 @@ public class Simulation {
 		frame.add(BorderLayout.EAST, controlPanel);
 
 		for (int i = 0; i < Utils.NUMBER_OF_CHANNELS; i++) {
-			Channel channel = new Channel(notificationBoard);
+			Channel channel = new Channel(i + 1, notificationBoard);
 			channels.add(channel);
 			channelPanel.add(BorderLayout.CENTER, channel);
 		}
@@ -56,12 +56,12 @@ public class Simulation {
 
 		sendButton.addActionListener((event) -> {
 			if (channelIndex >= Utils.NUMBER_OF_CHANNELS) {
-				notificationBoard.append("Channels are busy");
+				notificationBoard.append(0, "Channels are busy");
 				return;
 			}
 			channels.get(channelIndex).go();
 			channelIndex++;
-			notificationBoard.append("Send a Message!");
+			notificationBoard.append(channelIndex, "Send a Message!");
 		});
 		corruptButton.addActionListener((event) -> {
 			if (Utils.channelChosen != null) {
@@ -76,11 +76,13 @@ public class Simulation {
 		pauseButton.addActionListener((event) -> {
 			if (pauseButton.getText().equals("Pause")) {
 				pauseButton.setText("Continue");
+				frame.pack();
 				for (Channel channel : channels) {
 					channel.pause();
 				}
 			} else {
 				pauseButton.setText("Pause");
+				frame.pack();
 				for (Channel channel : channels) {
 					channel.goOn();
 				}
