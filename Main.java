@@ -1,5 +1,5 @@
 public class Main {
 	public static void main(String[] args) {
-		new Simulation().go();
+		new RDT("Reliable Data Transfer: Simple").go();
 	}
 }

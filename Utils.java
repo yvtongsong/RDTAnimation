@@ -17,4 +17,5 @@ public class Utils {
 	public static final int NUMBER_OF_CHANNELS = 15;
 
 	public static Channel channelChosen;
+	public static final Object sendLock = new Object();
 }

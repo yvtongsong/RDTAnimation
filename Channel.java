@@ -98,6 +98,7 @@ public class Channel extends JPanel {
 	private final Object pausingLock = new Object();
 	private final Object fsmLock = new Object();
 	private final int channelIndex;
+	private boolean done = false;
 
 	public Channel(int channelIndex, NotificationBoard notificationBoard) {
 		setPreferredSize(new Dimension(Utils.DRAW_PANEL_WIDTH, Utils.DRAW_PANEL_HEIGHT));
@@ -203,7 +204,12 @@ public class Channel extends JPanel {
 		highlightedMessages.clear();
 		isPausing.set(false);
 		notificationBoard.reset();
+		done = false;
 		goOn();
+	}
+
+	public boolean isDone() {
+		return done;
 	}
 
 
@@ -274,6 +280,11 @@ public class Channel extends JPanel {
 								case DOWN:
 									if (message.getState() == State.CORRUPT) {
 										addMessage(Direction.UP);
+									} else {
+										done = true;
+										synchronized (Utils.sendLock) {
+											Utils.sendLock.notify();
+										}
 									}
 									break;
 							}
