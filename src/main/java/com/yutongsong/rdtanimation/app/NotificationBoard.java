@@ -1,3 +1,5 @@
+package com.yutongsong.rdtanimation.app;
+
 import javax.swing.*;
 
 public class NotificationBoard extends JScrollPane{

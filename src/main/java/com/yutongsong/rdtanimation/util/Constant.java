@@ -1,4 +1,6 @@
-public class Utils {
+package com.yutongsong.rdtanimation.util;
+
+public class Constant {
 	public static final int STATIC_RECTANGLE_WIDTH = 20;
 	public static final int STATIC_RECTANGLE_HEIGHT = 30;
 
@@ -15,7 +17,4 @@ public class Utils {
 	public static final int FRAME_Y = 100;
 
 	public static final int NUMBER_OF_CHANNELS = 15;
-
-	public static Channel channelChosen;
-	public static final Object sendLock = new Object();
 }

@@ -1,3 +1,5 @@
+package com.yutongsong.rdtanimation.app;
+
 import javax.swing.*;
 import java.util.List;
 import java.util.ArrayList;
@@ -5,8 +7,11 @@ import java.awt.BorderLayout;
 import java.awt.event.*;
 import java.util.concurrent.TimeUnit;
 
-public class RDT {
-	public final String title;
+import static com.yutongsong.rdtanimation.util.Constant.*;
+import static com.yutongsong.rdtanimation.util.Lock.*;
+import static com.yutongsong.rdtanimation.util.ChannelUtil.*;
+
+public class RDTAnimation {
 	public final List<Channel> channels;
 	public final NotificationBoard notificationBoard;
 	public final JFrame frame;
@@ -14,10 +19,9 @@ public class RDT {
 	public final JButton loseButton;
 	public final JButton corruptButton;
 	public final JButton pauseButton;
-	public int channelIndex = 0;
+	private int channelIndex = 0;
 
-	public RDT(String title) {
-		this.title = title;
+	public RDTAnimation() {
 		channels = new ArrayList<>();
 		frame = new JFrame();
 		sendButton = new JButton("Send");
@@ -25,45 +29,50 @@ public class RDT {
 		loseButton = new JButton("Lose");
 		pauseButton = new JButton("Pause");
 		notificationBoard = new NotificationBoard();
-	}
 
-	public void go() {
-		setUpGUI();
-	}
-
-	public void setUpGUI() {
-		frame.setTitle(title);
-		frame.setLocationRelativeTo(null);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setResizable(false);
-		frame.setVisible(true);
-
-		JPanel channelPanel = new JPanel();
-		JPanel controlPanel = new JPanel(new BorderLayout());
-		JPanel buttonPanel = new JPanel();
-
-		frame.add(BorderLayout.CENTER, channelPanel);
-		frame.add(BorderLayout.EAST, controlPanel);
-
-		for (int i = 0; i < Utils.NUMBER_OF_CHANNELS; i++) {
-			Channel channel = new Channel(i + 1, notificationBoard);
-			channels.add(channel);
-			channelPanel.add(BorderLayout.CENTER, channel);
-		}
-
-		buttonPanel.add(sendButton);
-		buttonPanel.add(corruptButton);
-		buttonPanel.add(loseButton);
-		buttonPanel.add(pauseButton);
-		controlPanel.add(BorderLayout.CENTER, notificationBoard);
-		controlPanel.add(BorderLayout.NORTH, buttonPanel);
-
-		frame.pack();
+		initFrame();
+		initChannelPanel();
+		initControlPanel();
 
 		sendButtonActionListener();
 		corruptButtonActionListener();
 		loseButtonActionListener();
 		pauseButtonActionListener();
+
+	}
+
+	public void initFrame() {
+		frame.setTitle("RDT");
+		frame.setLocationRelativeTo(null);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setResizable(false);
+		frame.setVisible(true);
+	}
+
+	public void initChannelPanel() {
+		JPanel channelPanel = new JPanel();
+		for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+			Channel channel = new Channel(i + 1, notificationBoard);
+			channels.add(channel);
+			channelPanel.add(BorderLayout.CENTER, channel);
+		}
+		frame.add(BorderLayout.CENTER, channelPanel);
+	}
+
+	public void initControlPanel() {
+		JPanel controlPanel = new JPanel(new BorderLayout());
+		controlPanel.add(BorderLayout.CENTER, notificationBoard);
+
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.add(sendButton);
+		buttonPanel.add(corruptButton);
+		buttonPanel.add(loseButton);
+		buttonPanel.add(pauseButton);
+
+		controlPanel.add(BorderLayout.NORTH, buttonPanel);
+
+		frame.add(BorderLayout.EAST, controlPanel);
+		frame.pack();
 	}
 
 	public void sendButtonActionListener() {
@@ -82,47 +91,69 @@ public class RDT {
 
 	public void sendAction() {
 		new Thread(() -> {
-			while (true) {
-				if (channelIndex >= Utils.NUMBER_OF_CHANNELS ||
-						(channelIndex != 0 && !channels.get(channelIndex - 1).isDone())) {
-					synchronized (Utils.sendLock) {
-						try {
-							System.out.println("sleep!");
-							Utils.sendLock.wait();
-						} catch (Exception e) {
-							e.printStackTrace();
+			for (Channel channel : channels) {
+				notificationBoard.append(channelIndex, "Send a Message!");
+				channel.addMessage(Direction.UP, State.NORMAL);
+
+				boolean loopFlag = true;
+				while (loopFlag) {
+					if (channel.isBusy()) {
+						synchronized (sendLock) {
+							try {
+								sendLock.wait();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					}
+					State state = channel.getMessageState();
+					Direction direction = channel.getMessageDirection();
+
+					if (direction == Direction.UP) {
+						switch (state) {
+							case NORMAL:
+								channel.addMessage(Direction.DOWN, State.NORMAL);
+								break;
+							case CORRUPT:
+								channel.addMessage(Direction.DOWN, State.CORRUPT);
+								break;
+							case LOSE:
+								channel.addMessage(Direction.DOWN, State.LOSE);
+								break;
+						}
+					} else {
+						switch (state) {
+							case NORMAL:
+								loopFlag = false;
+								break;
+							case CORRUPT:
+								channel.addMessage(Direction.UP, State.NORMAL);
+								break;
+							case LOSE:
+								channel.addMessage(Direction.UP, State.NORMAL);
+								break;
 						}
 					}
 				}
-				System.out.println("Wakeup!");
-				channels.get(channelIndex).go();
-				channelIndex++;
-				notificationBoard.append(channelIndex, "Send a Message!");
 			}
 		}).start();
 	}
 
 	public void resetAction() {
-		for (Channel channel : channels) {
-			channel.reset();
-		}
-		channelIndex = 0;
-		Utils.channelChosen = null;
-		notificationBoard.reset();
 	}
 
 	public void corruptButtonActionListener() {
 		corruptButton.addActionListener((event) -> {
-			if (Utils.channelChosen != null) {
-				Utils.channelChosen.corruptMessage();
+			if (channelChosen != null) {
+				channelChosen.corruptMessage();
 			}
 		});
 	}
 
 	public void loseButtonActionListener() {
 		loseButton.addActionListener((event) -> {
-			if (Utils.channelChosen != null) {
-				Utils.channelChosen.loseMessage();
+			if (channelChosen != null) {
+				channelChosen.loseMessage();
 			}
 		});
 	}
