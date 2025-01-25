@@ -7,8 +7,9 @@ import java.awt.BorderLayout;
 import java.awt.event.*;
 import java.util.concurrent.TimeUnit;
 
+import com.yutongsong.rdtanimation.component.*;
+
 import static com.yutongsong.rdtanimation.util.Constant.*;
-import static com.yutongsong.rdtanimation.util.Lock.*;
 import static com.yutongsong.rdtanimation.util.ChannelUtil.*;
 
 public class RDTAnimation {

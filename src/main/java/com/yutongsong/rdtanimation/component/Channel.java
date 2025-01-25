@@ -1,4 +1,4 @@
-package com.yutongsong.rdtanimation.app;
+package com.yutongsong.rdtanimation.component;
 
 import javax.swing.*;
 import java.awt.Color;
@@ -9,7 +9,6 @@ import java.awt.event.MouseEvent;
 import java.util.concurrent.TimeUnit;
 
 import static com.yutongsong.rdtanimation.util.Constant.*;
-import static com.yutongsong.rdtanimation.util.Lock.*;
 import static com.yutongsong.rdtanimation.util.ChannelUtil.*;
 
 public class Channel extends JPanel {

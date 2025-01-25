@@ -1,4 +1,4 @@
-package com.yutongsong.rdtanimation.app;
+package com.yutongsong.rdtanimation.component;
 
 public enum State {
 	NORMAL,
