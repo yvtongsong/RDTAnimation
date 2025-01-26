@@ -188,6 +188,10 @@ public class Channel extends JPanel {
 		return message.getDirection();
 	}
 
+	public int getChannelIndex() {
+		return channelIndex;
+	}
+
 	public void pause() {
 		isPausing = true;
 	}

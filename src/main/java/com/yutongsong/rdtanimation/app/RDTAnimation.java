@@ -12,90 +12,43 @@ import com.yutongsong.rdtanimation.component.*;
 import static com.yutongsong.rdtanimation.util.Constant.*;
 import static com.yutongsong.rdtanimation.util.ChannelUtil.*;
 
-public class RDTAnimation {
-	public final List<Channel> channels;
-	public final NotificationBoard notificationBoard;
-	public final JFrame frame;
-	public final JButton sendButton;
-	public final JButton loseButton;
-	public final JButton corruptButton;
-	public final JButton pauseButton;
-	private int channelIndex = 0;
+public class RDTAnimation extends GUI implements ButtonActionListener { 
+	private final List<Channel> channels;
 
 	public RDTAnimation() {
 		channels = new ArrayList<>();
-		frame = new JFrame();
-		sendButton = new JButton("Send");
-		corruptButton = new JButton("Corrupt");
-		loseButton = new JButton("Lose");
-		pauseButton = new JButton("Pause");
-		notificationBoard = new NotificationBoard();
-
-		initFrame();
-		initChannelPanel();
-		initControlPanel();
+		for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+			Channel channel = new Channel(i, notificationBoard);
+			channels.add(channel);
+			channelPanel.add(channel);
+		}
+		frame.pack();
 
 		sendButtonActionListener();
 		corruptButtonActionListener();
 		loseButtonActionListener();
 		pauseButtonActionListener();
-
 	}
 
-	public void initFrame() {
-		frame.setTitle("RDT");
-		frame.setLocationRelativeTo(null);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setResizable(false);
-		frame.setVisible(true);
-	}
-
-	public void initChannelPanel() {
-		JPanel channelPanel = new JPanel();
-		for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
-			Channel channel = new Channel(i + 1, notificationBoard);
-			channels.add(channel);
-			channelPanel.add(BorderLayout.CENTER, channel);
-		}
-		frame.add(BorderLayout.CENTER, channelPanel);
-	}
-
-	public void initControlPanel() {
-		JPanel controlPanel = new JPanel(new BorderLayout());
-		controlPanel.add(BorderLayout.CENTER, notificationBoard);
-
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.add(sendButton);
-		buttonPanel.add(corruptButton);
-		buttonPanel.add(loseButton);
-		buttonPanel.add(pauseButton);
-
-		controlPanel.add(BorderLayout.NORTH, buttonPanel);
-
-		frame.add(BorderLayout.EAST, controlPanel);
-		frame.pack();
-	}
-
+	@Override
 	public void sendButtonActionListener() {
 		sendButton.addActionListener((event) -> {
 			if (sendButton.getText().equals("Send")) {
-				sendAction();
 				sendButton.setText("Reset");
 				frame.pack();
+				sendAction();
 			} else {
-				resetAction();
 				sendButton.setText("Send");
 				frame.pack();
+				resetAction();
 			}
 		});
 	}
 
-	public void sendAction() {
+	private void sendAction() {
 		new Thread(() -> {
 			for (Channel channel : channels) {
-				notificationBoard.append(channelIndex, "Send a Message!");
 				channel.addMessage(Direction.UP, State.NORMAL);
-
 				boolean loopFlag = true;
 				while (loopFlag) {
 					if (channel.isBusy()) {
@@ -107,42 +60,38 @@ public class RDTAnimation {
 							}
 						}
 					}
-					State state = channel.getMessageState();
 					Direction direction = channel.getMessageDirection();
-
-					if (direction == Direction.UP) {
-						switch (state) {
-							case NORMAL:
+					State state = channel.getMessageState();
+					switch (direction) {
+						case UP:
+							if (state == State.NORMAL) {
 								channel.addMessage(Direction.DOWN, State.NORMAL);
-								break;
-							case CORRUPT:
+							} else if (state == State.CORRUPT) {
 								channel.addMessage(Direction.DOWN, State.CORRUPT);
-								break;
-							case LOSE:
+							} else {
 								channel.addMessage(Direction.DOWN, State.LOSE);
-								break;
-						}
-					} else {
-						switch (state) {
-							case NORMAL:
+							}
+							break;
+						case DOWN:
+							if (state == State.NORMAL) {
 								loopFlag = false;
-								break;
-							case CORRUPT:
+							} else if (state == State.CORRUPT) {
 								channel.addMessage(Direction.UP, State.NORMAL);
-								break;
-							case LOSE:
-								channel.addMessage(Direction.UP, State.NORMAL);
-								break;
-						}
+							} else {
+								channel.addMessage(Direction.UP, state.NORMAL);
+							}
+							break;
 					}
 				}
 			}
 		}).start();
 	}
 
-	public void resetAction() {
+	private void resetAction() {
+
 	}
 
+	@Override
 	public void corruptButtonActionListener() {
 		corruptButton.addActionListener((event) -> {
 			if (channelChosen != null) {
@@ -151,6 +100,7 @@ public class RDTAnimation {
 		});
 	}
 
+	@Override
 	public void loseButtonActionListener() {
 		loseButton.addActionListener((event) -> {
 			if (channelChosen != null) {
@@ -159,6 +109,7 @@ public class RDTAnimation {
 		});
 	}
 
+	@Override
 	public void pauseButtonActionListener() {
 		pauseButton.addActionListener((event) -> {
 			if (pauseButton.getText().equals("Pause")) {
