@@ -1,4 +1,4 @@
-package com.yutongsong.rdtanimation.app;
+package com.yutongsong.rdtanimation.component;
 
 import javax.swing.*;
 import java.awt.BorderLayout;

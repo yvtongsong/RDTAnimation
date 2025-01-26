@@ -11,6 +11,37 @@ public class GBNChannel extends Channel{
 	}
 
 	@Override
+	public void addMessage(Direction direction, State state) {
+		new Thread(() -> {
+			super.addMessage(direction, state);
+			switch (getMessageState()) {
+				case NORMAL:
+					if (receiverWindowStartChannelIndex == getChannelIndex()) {
+						receiverWindowStartChannelIndex++;
+					}
+					super.addMessage(Direction.DOWN, State.NORMAL);
+					break;
+				case CORRUPT:
+					super.addMessage(Direction.DOWN, State.CORRUPT);
+					break;
+				case LOSE:
+					super.addMessage(Direction.DOWN, State.LOSE);
+					break;
+			}
+			if (getMessageState() == State.NORMAL) {
+				if (senderWindowStartChannelIndex == getChannelIndex()) {
+					senderWindowStartChannelIndex++;
+				}
+			}
+			if (getChannelIndex() == maxSenderIndex) {
+				synchronized (sendLockGBN) {
+					sendLockGBN.notify();
+				}
+			}
+		}).start();
+	}
+
+	@Override
 	public void drawStaticRectangle(Graphics g) {
 		if (isInWindow()) {
 			g.setColor(Color.red);
