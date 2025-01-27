@@ -14,6 +14,7 @@ public class SRAnimation extends GUI implements ButtonActionListener {
 	private final List<SRChannel> channels;
 
 	public SRAnimation() {
+		frame.setTitle("SRAnimation");
 		channels = new ArrayList<>();
 		for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
 			SRChannel channel = new SRChannel(i, notificationBoard);

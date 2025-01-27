@@ -14,6 +14,7 @@ public class GBNAnimation extends GUI implements ButtonActionListener {
 	private final List<GBNChannel> channels;
 
 	public GBNAnimation() {
+		frame.setTitle("GBNAnimation");
 		channels = new ArrayList<>();
 		for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
 			GBNChannel channel = new GBNChannel(i, notificationBoard);
@@ -46,9 +47,9 @@ public class GBNAnimation extends GUI implements ButtonActionListener {
 	private void sendAction() {
 		new Thread(() -> {
 			while (true) {
-				maxSenderIndex = windowSize + senderWindowStartChannelIndex - 1;
 				for (GBNChannel channel : channels) {
 					if (channel.isInWindow()) {
+						maxSenderIndex = channel.getChannelIndex();
 						channel.addMessage(Direction.UP, State.NORMAL);
 						try {
 							TimeUnit.MILLISECONDS.sleep(300);

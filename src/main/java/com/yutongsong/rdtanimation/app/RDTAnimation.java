@@ -16,6 +16,7 @@ public class RDTAnimation extends GUI implements ButtonActionListener {
 	private final List<Channel> channels;
 
 	public RDTAnimation() {
+		frame.setTitle("RDTAnimation");
 		channels = new ArrayList<>();
 		for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
 			Channel channel = new Channel(i, notificationBoard);
