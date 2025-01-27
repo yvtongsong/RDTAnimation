@@ -13,4 +13,15 @@ public class ChannelUtil {
 	public static int receiverWindowStartChannelIndex = 0;
 	public static int maxSenderIndex = windowSize - 1;
 	public static int numberOfBufferElements = 0;
+
+	public static Object resetLock = new Object();
+
+	public static void reset() {
+		channelChosen = null;
+		windowSize = 5;
+		senderWindowStartChannelIndex = 0;
+		receiverWindowStartChannelIndex = 0;
+		maxSenderIndex = windowSize - 1;
+		numberOfBufferElements = 0;
+	}
 }
