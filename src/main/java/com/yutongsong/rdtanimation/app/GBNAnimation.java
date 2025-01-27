@@ -69,7 +69,10 @@ public class GBNAnimation extends GUI implements ButtonActionListener {
 	}
 
 	private void resetAction() {
-
+		frame.dispose();
+		synchronized (resetLock) {
+			resetLock.notify();
+		}
 	}
 
 	@Override
